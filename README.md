@@ -8,7 +8,7 @@ micrófono con dinámica y EQ, 3 entradas virtuales, **mezclador por aplicación
 
 - **MixSalidas**: un dispositivo de reproducción virtual que se pone como salida predeterminada de Windows. Cada app que suena en él se captura por separado y va a A1/A2/A3/B1 según sus botones, así puede sonar en varios dispositivos a la vez. Se usa uno de los VAIO de Voicemeeter ya instalados, renombrado a "MixSalidas" (Panel de sonido › dispositivo › Propiedades › nombre). Se ha medido que su captura funciona sin Voicemeeter abierto.
 - **Volumen de Windows ↔ fader de MixSalidas**: enlazados en ambos sentidos. Ese volumen no se aplica a lo capturado (medido: igual al 100 % que al 25 %), así que el mixer lo aplica a las apps capturadas. El volumen y el mute por app de Windows sí afectan a la captura (medido), por eso los faders de las apps funcionan también para lo ruteado.
-- **A1–A3**: salidas físicas, cada una en su dispositivo. Su 100 % equivale a −20 dB.
+- **A1–A3**: salidas físicas, cada una en su dispositivo. Por defecto su 100 % equivale a 0 dB (el audio sale tal cual); el tope se ajusta en Configuración.
 - **B1 · MinMix-B1**: se envía a un cable virtual (VB-Cable, "CABLE Input"). En Meet/Discord se elige "CABLE Output", renombrado en Windows a "MinMix-B1". Los VAIO de Voicemeeter no sirven aquí: su lado de grabación solo recibe audio con Voicemeeter abierto.
 
 Todos los faders van en % con curva de audio (50 % ≈ −12 dB respecto al 100 %). La salida lleva un limitador suave en lugar de recorte duro. La interfaz se adapta al ancho de la ventana (3 disposiciones), y las apps se muestran en filas que se pueden minimizar a "nombre + %".
@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File tools\install.ps1
 El script compila en Release, instala en `%LOCALAPPDATA%\Programs\MiniMixer` (sin administrador) y crea el acceso directo "Mini-Mixer" en el menú Inicio. Si la app está abierta, la cierra antes y la vuelve a abrir. Hay que volver a ejecutarlo después de cada cambio en el código.
 
 Pestaña **Configuración** (se guarda en `%APPDATA%\MiniMixer\settings.json`, junto con los dispositivos elegidos en cada fila y las secciones ocultas):
-- **Nivel máximo de las salidas**: el nivel que entrega A1/A2/A3/B1 con el fader al 100 %, de −40 a +1.5 dB. Es un segundo control interno: el fader nunca lo supera.
+- **Nivel máximo de las salidas**: el nivel que entrega A1/A2/A3/B1 con el fader al 100 %, de −40 a +1.5 dB, con 0 dB (estándar) en el centro de la barra. Es un segundo control interno: el fader nunca lo supera.
 - **Frecuencia de mezcla**: 44.1 / 48 / 96 / 192 kHz; se aplica al reiniciar. Medido con apps sonando: a 48 kHz ≈ 0.6 % de un núcleo en la bandeja y a 192 kHz ≈ 9 %. Las fuentes (apps, Discord) trabajan a 48 kHz, así que 192 kHz no añade calidad audible.
 - **Iniciar con Windows**.
 
@@ -162,3 +162,20 @@ Crear un dispositivo de audio virtual nuevo (como "Voicemeeter Input") **requier
 - Remuestreo adaptativo contra la deriva de reloj en lugar de vaciar la FIFO.
 - RNNoise para el denoiser.
 - Iconos de las apps (`SHGetFileInfo` / `Icon.ExtractAssociatedIcon` sobre la ruta del proceso).
+
+## Calidad de audio (medida)
+
+`tools` no incluye el banco de pruebas, pero el método es este: un tono de 997 Hz en un dispositivo virtual, capturado por proceso, mezclado por el motor y grabado de nuevo por loopback; luego se mide THD+N y se buscan clics.
+
+| Versión | Bus a −20 dB | Bus a 0 dB | Clics |
+|---|---|---|---|
+| 1.0.0 | THD+N −27 dB | −5.6 dB (saturación) | cientos por segundo a 0 dB o a 192 kHz |
+| 1.0.1 | −56 dB | −56 dB | ninguno, a 48 / 96 / 192 kHz |
+
+−56 dB es el límite de la propia cadena de medición: el tono directo, sin Mini-Mixer, da lo mismo.
+
+Errores corregidos en 1.0.1:
+- `OutputBus.Mix` limpiaba el buffer con `Array.Clear`, pero WasapiOut pasa un `float[]` que en realidad es un `byte[]` (NAudio `WaveBuffer`), así que solo se borraba 1/4. El resto de la mezcla anterior se volvía a sumar: una realimentación que con el bus cerca de 0 dB se desbocaba. Ese era el "ruido por encima de −20 dB".
+- El remuestreo de entrada (WDL) vaciaba la FIFO y rellenaba con ceros en cada bloque: ahora mantiene 10 ms de reserva.
+- El remuestreo de salida lo hace el bus (WDL continuo) a la frecuencia del dispositivo, en vez del DMO de NAudio, que metía un clic por bloque.
+- La captura por proceso pasa de PCM de 16 bits a float de 32 bits.

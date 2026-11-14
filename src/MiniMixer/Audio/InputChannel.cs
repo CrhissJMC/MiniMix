@@ -101,10 +101,22 @@ public sealed class InputChannel : IDisposable
         };
 
         ISampleProvider chain = new StereoAdapter(_fifo.ToSampleProvider());
-        if (native.SampleRate != AudioEngine.SampleRate)
+        _nativeRate = native.SampleRate;
+        _nativeChannels = native.Channels;
+        _resampling = native.SampleRate != AudioEngine.SampleRate;
+        if (_resampling)
             chain = new WdlResamplingSampleProvider(chain, AudioEngine.SampleRate);
         _chain = chain;
     }
+
+    private int _nativeRate, _nativeChannels;
+    private bool _resampling;
+
+    /// <summary>
+    /// Reserva que se deja en la FIFO al remuestrear (10 ms). El remuestreador WDL necesita unas muestras de
+    /// "futuro"; si se le deja vaciar la FIFO, rellena con ceros y mete un clic en cada bloque (~80/s medidos).
+    /// </summary>
+    private int ReserveFrames => _nativeRate / 100;
 
     private void OnData(IAudioSource sender, byte[] buffer, int bytes)
     {
@@ -119,14 +131,34 @@ public sealed class InputChannel : IDisposable
             _fifo.AddSamples(_bytes, 0, byteCount);
 
             bool solo = _engine.SoloActive;
-            int read;
-            while ((read = _chain.Read(_work, 0, _work.Length)) > 0)
+
+            if (!_resampling)
             {
-                Processor.Process(_work, read, solo);
-                for (int b = 0; b < _routes.Length; b++)
-                    if (_routes[b]) _engine.Buses[b].Write(this, _work, read);
+                int read;
+                while ((read = _chain.Read(_work, 0, _work.Length)) > 0) Emit(read, solo);
+                return;
+            }
+
+            // Remuestreando: sólo se pide lo que se puede producir sin vaciar la reserva de la FIFO
+            int inFrames = _fifo.BufferedBytes / (4 * _nativeChannels) - ReserveFrames;
+            if (inFrames <= 0) return;
+            long outSamples = (long)inFrames * AudioEngine.SampleRate / _nativeRate * 2;
+            while (outSamples >= 2)
+            {
+                int want = (int)Math.Min(_work.Length, outSamples);
+                int read = _chain.Read(_work, 0, want);
+                if (read <= 0) break;
+                Emit(read, solo);
+                outSamples -= read;
             }
         }
+    }
+
+    private void Emit(int samples, bool solo)
+    {
+        Processor.Process(_work, samples, solo);
+        for (int b = 0; b < _routes.Length; b++)
+            if (_routes[b]) _engine.Buses[b].Write(this, _work, samples);
     }
 
     public void Dispose()

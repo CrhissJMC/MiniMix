@@ -29,8 +29,15 @@ public sealed class AppSettings
     /// </summary>
     public Dictionary<string, double> BusMaxDb { get; set; } = new()
     {
-        ["A1"] = -20, ["A2"] = -20, ["A3"] = -20, ["B1"] = 0
+        ["A1"] = 0, ["A2"] = 0, ["A3"] = 0, ["B1"] = 0
     };
+
+    /// <summary>Posición (%) del fader de cada salida, para que se mantenga entre reinicios.</summary>
+    public Dictionary<string, double> BusGain { get; set; } = new();
+
+    /// <summary>Versión del formato de settings.json (para migraciones).</summary>
+    public int SettingsVersion { get; set; }
+    public const int CurrentSettingsVersion = 2;
 
     /// <summary>
     /// Dispositivo elegido por cada fila ("MixSalidas", "A1".."B1", "Micrófono", "Virtual 1"...).
@@ -79,7 +86,14 @@ public sealed class AppSettings
         try
         {
             if (File.Exists(FilePath))
+            {
                 Current = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Json) ?? new AppSettings();
+                Current.Migrate();
+            }
+            else
+            {
+                Current = new AppSettings { SettingsVersion = CurrentSettingsVersion };
+            }
         }
         catch
         {
@@ -130,6 +144,27 @@ public sealed class AppSettings
     {
         Apps[key] = new AppMemory { Volume = Math.Round(volume, 1), Mute = mute, Routes = routes.ToArray() };
         SaveSoon();
+    }
+
+    /// <summary>
+    /// v1 → v2: el tope de -20 dB de A1–A3 sólo tapaba un fallo del mezclador (ya corregido) y pasa a 0 dB.
+    /// Para que no suene de golpe 20 dB más fuerte, el fader de esas salidas se baja al 32 % (= -20 dB).
+    /// </summary>
+    private void Migrate()
+    {
+        if (SettingsVersion >= CurrentSettingsVersion) return;
+        foreach (var bus in new[] { "A1", "A2", "A3" })
+        {
+            if (BusMaxDb.TryGetValue(bus, out var max) && max < 0)
+            {
+                double fader = BusGain.TryGetValue(bus, out var g) ? g : 100;
+                // mismo nivel final: fader% nuevo = fader% · 10^(max/40) (ley cuadrática del fader)
+                BusGain[bus] = Math.Round(fader * Math.Pow(10, max / 40), 1);
+                BusMaxDb[bus] = 0;
+            }
+        }
+        SettingsVersion = CurrentSettingsVersion;
+        Save();
     }
 
     public double GetBusMaxDb(string bus, double fallback) =>

@@ -15,11 +15,15 @@ public sealed class ProcessLoopbackCapture : IDisposable
 {
     public const int SampleRate = 48000;
     public const int Channels = 2;
-    public const int BitsPerSample = 16;
+    public const int BitsPerSample = 32;
     private const int BlockAlign = Channels * BitsPerSample / 8;
 
-    /// <summary>El loopback por proceso no admite GetMixFormat: el formato lo elegimos nosotros.</summary>
-    public static WaveFormat Format { get; } = new(SampleRate, BitsPerSample, Channels);
+    /// <summary>
+    /// El loopback por proceso no admite GetMixFormat: el formato lo elegimos nosotros. Float de 32 bits (el
+    /// formato interno del motor de audio de Windows): sin pérdida. Con PCM de 16 bits, una app a volumen bajo
+    /// (p.ej. 7 %) perdía resolución antes de llegar al mezclador.
+    /// </summary>
+    public static WaveFormat Format { get; } = WaveFormat.CreateIeeeFloatWaveFormat(SampleRate, Channels);
 
     private readonly uint _processId;
     private readonly bool _includeTree;
@@ -62,7 +66,7 @@ public sealed class ProcessLoopbackCapture : IDisposable
 
             var wfx = new WaveFormatEx
             {
-                wFormatTag = 1, // WAVE_FORMAT_PCM
+                wFormatTag = 3, // WAVE_FORMAT_IEEE_FLOAT
                 nChannels = Channels,
                 nSamplesPerSec = SampleRate,
                 wBitsPerSample = BitsPerSample,

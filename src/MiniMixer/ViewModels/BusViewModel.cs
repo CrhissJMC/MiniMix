@@ -25,7 +25,7 @@ public sealed class BusViewModel : StripViewModelBase
         Title = title;
         Hint = hint;
         Devices = devices;
-        Gain = 100;
+        Gain = AppSettings.Current.BusGain.TryGetValue(bus.Name, out var savedGain) ? savedGain : 100;
 
         // 1º lo que eligió el usuario la última vez; si no, el valor automático
         SelectedDevice = AppSettings.Current.TryGetDevice(bus.Name, devices, out var saved)
@@ -55,11 +55,24 @@ public sealed class BusViewModel : StripViewModelBase
             value = Math.Round(Math.Clamp(value, AppSettings.MinAllowedDb, AppSettings.MaxAllowedDb), 1);
             if (!SetProperty(ref _maxDb, value)) return;
             OnPropertyChanged(nameof(MaxLevelText));
+            OnPropertyChanged(nameof(MaxLevelPosition));
             OnGainChanged(Gain); // re-aplicar con el nuevo tope
 
             AppSettings.Current.BusMaxDb[BusName] = value;
             AppSettings.Current.SaveSoon();
         }
+    }
+
+    /// <summary>
+    /// Posición del deslizador de Configuración (0..100) con 0 dB en el centro:
+    /// mitad izquierda = -40 … 0 dB, mitad derecha = 0 … +1.5 dB.
+    /// </summary>
+    public double MaxLevelPosition
+    {
+        get => _maxDb <= 0 ? 50 * (1 - _maxDb / AppSettings.MinAllowedDb) : 50 + 50 * _maxDb / AppSettings.MaxAllowedDb;
+        set => MaxLevelDb = value <= 50
+            ? AppSettings.MinAllowedDb * (1 - value / 50)
+            : AppSettings.MaxAllowedDb * (value - 50) / 50;
     }
 
     public string MaxLevelText => $"{_maxDb:+0.0;-0.0;0.0} dB";
@@ -100,7 +113,15 @@ public sealed class BusViewModel : StripViewModelBase
         }
     }
 
-    protected override void OnGainChanged(double value) => _bus.GainDb = PercentToDb(value);
+    protected override void OnGainChanged(double value)
+    {
+        _bus.GainDb = PercentToDb(value);
+        if (_loaded)
+        {
+            AppSettings.Current.BusGain[BusName] = Math.Round(value, 1);
+            AppSettings.Current.SaveSoon();
+        }
+    }
     protected override void OnMuteChanged(bool value) => _bus.Mute = value;
 
     public override void UpdateMeters()

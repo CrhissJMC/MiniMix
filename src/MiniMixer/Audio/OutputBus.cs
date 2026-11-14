@@ -53,13 +53,29 @@ public sealed class OutputBus : IDisposable
         DeviceId = null;
         if (device == null) return;
 
-        // Modo compartido + event-driven, ~30 ms. NAudio remuestrea si el formato de mezcla
-        // del dispositivo no es 48 kHz float.
+        // Modo compartido + event-driven, ~30 ms.
+        // Se entrega el audio YA a la frecuencia del dispositivo: si no coincide con la del motor, NAudio usa un
+        // remuestreador DMO por bloque que mete un clic en cada bloque (~90/s medidos). El WDL de aquí es continuo.
+        int deviceRate = DeviceMixRate(device);
+        ISampleProvider mix = new BusMixer(this);
+        if (deviceRate > 0 && deviceRate != AudioEngine.SampleRate)
+            mix = new NAudio.Wave.SampleProviders.WdlResamplingSampleProvider(mix, deviceRate);
+
         var output = new WasapiOut(device, AudioClientShareMode.Shared, true, 30);
-        output.Init(new BusMixer(this).ToWaveProvider());
+        output.Init(mix.ToWaveProvider());
         output.Play();
         _out = output;
         DeviceId = device.ID;
+        DeviceSampleRate = deviceRate;
+    }
+
+    /// <summary>Frecuencia del formato de mezcla de Windows para el dispositivo del bus.</summary>
+    public int DeviceSampleRate { get; private set; }
+
+    private static int DeviceMixRate(MMDevice device)
+    {
+        try { return device.AudioClient.MixFormat.SampleRate; }
+        catch { return 0; }
     }
 
     /// <summary>Llamado desde el hilo de captura de cada canal.</summary>
@@ -114,7 +130,11 @@ public sealed class OutputBus : IDisposable
     /// <summary>Mezcla final. Se ejecuta en el hilo de render de WASAPI.</summary>
     internal int Mix(float[] buffer, int offset, int count)
     {
-        Array.Clear(buffer, offset, count);
+        // OJO: no usar Array.Clear aquí. WasapiOut nos pasa un float[] "disfrazado" (NAudio WaveBuffer: en
+        // realidad es un byte[]), y Array.Clear lo trata como byte[] y sólo borraba 1/4 del bloque. El resto
+        // conservaba la mezcla anterior, que se volvía a sumar: realimentación que con el bus a 0 dB se
+        // desbocaba (ruido/saturación por encima de -20 dB). Borrado muestra a muestra:
+        for (int i = offset, end = offset + count; i < end; i++) buffer[i] = 0f;
         if (_scratch.Length < count) _scratch = new float[count];
 
         foreach (var input in _inputs)
