@@ -1,0 +1,449 @@
+<Window x:Class="MiniMixer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:MiniMixer.Controls"
+        Title="Mini-Mixer" Icon="app.ico" Width="1480" Height="820" MinWidth="460" MinHeight="380"
+        Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="11" UseLayoutRounding="True">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- ============ Bloque vertical: medidor + fader % + OUT/MIC + solo + mute ============ -->
+        <DataTemplate x:Key="FaderBlock">
+            <Grid Height="250" HorizontalAlignment="Center" Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <c:VuMeter LevelL="{Binding LevelL}" LevelR="{Binding LevelR}" Margin="0,4" />
+
+                <Slider Grid.Column="1" Style="{StaticResource FaderSlider}"
+                        Minimum="{Binding FaderMin}" Maximum="{Binding FaderMax}"
+                        Value="{Binding Gain}" Tag="{Binding GainText}"
+                        c:FaderBehavior.ResetValue="{Binding FaderDefault}" />
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="4,0,0,0">
+                    <ItemsControl ItemsSource="{Binding Routes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ToggleButton Style="{StaticResource RouteToggle}"
+                                              Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ToggleButton Style="{StaticResource SoloToggle}" Content="solo" Margin="0,8,0,1"
+                                  IsChecked="{Binding IsSolo}"
+                                  Visibility="{Binding ShowSolo, Converter={StaticResource BoolToVis}}" />
+                    <ToggleButton Style="{StaticResource MuteToggle}" Content="Mute" Margin="0,1,0,0"
+                                  IsChecked="{Binding IsMuted}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- ============ Fader horizontal + medidor (filas de apps y salidas) ============ -->
+        <DataTemplate x:Key="HFaderBlock">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Slider Style="{StaticResource HFader}"
+                        Minimum="{Binding FaderMin}" Maximum="{Binding FaderMax}" Value="{Binding Gain}"
+                        c:FaderBehavior.ResetValue="{Binding FaderDefault}" />
+                <c:VuMeter Grid.Row="1" Orientation="Horizontal" Height="6" Margin="0,1,0,0"
+                           LevelL="{Binding LevelL}" LevelR="{Binding LevelR}" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- ============ Entrada virtual (vertical, referencia imagen 2) ============ -->
+        <DataTemplate x:Key="VirtualInputTemplate">
+            <Border Style="{StaticResource StripBorder}" Width="168">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource StripTitle}" HorizontalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+
+                    <TextBlock Text="EQUALIZER" Style="{StaticResource SectionLabel}" />
+                    <UniformGrid Columns="3">
+                        <c:Knob Label="Bass" Minimum="-12" Maximum="12" Value="{Binding EqLow}" />
+                        <c:Knob Label="Mid" Minimum="-12" Maximum="12" Value="{Binding EqMid}" />
+                        <c:Knob Label="Treble" Minimum="-12" Maximum="12" Value="{Binding EqHigh}" />
+                    </UniformGrid>
+                    <UniformGrid Columns="2" Margin="0,2,0,0">
+                        <c:Knob Label="HPF Hz" Minimum="20" Maximum="500" DefaultValue="20" ValueFormat="0"
+                                Value="{Binding HighPass}" />
+                        <c:Knob Label="LPF kHz" Minimum="2" Maximum="20" DefaultValue="20" ValueFormat="0.#"
+                                Value="{Binding LowPass}" />
+                    </UniformGrid>
+
+                    <c:PanPad Height="80" Margin="0,6,0,0" X="{Binding PanX}" Y="{Binding PadY}"
+                              LeftLabel="L" RightLabel="R" TopLabel="brillo +" BottomLabel="brillo −" />
+
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource FaderBlock}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ============ Fila de salida (SALIDA / MIC VIRTUAL) ============ -->
+        <DataTemplate x:Key="BusRowTemplate">
+            <Border Style="{StaticResource StripBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" Width="92" VerticalAlignment="Center"
+                                   FontWeight="Bold" FontSize="12" Foreground="{StaticResource AccentBrush}" />
+                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
+                                  ToolTip="{Binding SelectedDevice}" />
+                    </DockPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="44" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource HFaderBlock}" />
+                        <TextBlock Grid.Column="1" Text="{Binding GainText}" FontWeight="Bold"
+                                   TextAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ToggleButton Grid.Column="2" Style="{StaticResource MuteToggle}" Content="Mute"
+                                      IsChecked="{Binding IsMuted}" />
+                    </Grid>
+                    <TextBlock Text="{Binding Hint}" Foreground="{StaticResource DimTextBrush}" FontSize="10"
+                               TextWrapping="Wrap" Margin="0,3,0,0"
+                               Visibility="{Binding HasHint, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ============ Fila MixSalidas (volumen = volumen de Windows) ============ -->
+        <DataTemplate x:Key="MixSalidasRowTemplate">
+            <Border Style="{StaticResource StripBorder}" BorderBrush="{StaticResource AccentBrush}">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" Width="92" VerticalAlignment="Center"
+                                   FontWeight="Bold" FontSize="12" Foreground="{StaticResource AccentBrush}" />
+                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
+                                  ToolTip="{Binding SelectedDevice}" />
+                    </DockPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="44" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource HFaderBlock}"
+                                        ToolTip="Volumen de Windows de MixSalidas (enlazado con el de la barra de tareas)" />
+                        <TextBlock Grid.Column="1" Text="{Binding GainText}" FontWeight="Bold"
+                                   TextAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ToggleButton Grid.Column="2" Style="{StaticResource MuteToggle}" Content="Mute"
+                                      IsChecked="{Binding IsMuted}" />
+                    </Grid>
+                    <DockPanel Margin="0,6,0,0">
+                        <TextBlock Text="Apps nuevas →" Foreground="{StaticResource DimTextBrush}" VerticalAlignment="Center"
+                                   Margin="0,0,6,0" ToolTip="Ruteo inicial de las apps que empiecen a sonar en MixSalidas" />
+                        <ItemsControl ItemsSource="{Binding Routes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton Style="{StaticResource RouteToggle}" Margin="2,0"
+                                                  Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                    <TextBlock Text="{Binding Hint}" Foreground="{StaticResource DimTextBrush}" FontSize="10"
+                               TextWrapping="Wrap" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ============ Fila de aplicación (horizontal, minimizable) ============ -->
+        <DataTemplate x:Key="AppRowTemplate">
+            <Border Style="{StaticResource StripBorder}" Padding="6,4" Margin="3,2">
+                <StackPanel>
+                    <DockPanel>
+                        <ToggleButton DockPanel.Dock="Left" Style="{StaticResource ChevronToggle}"
+                                      IsChecked="{Binding IsExpanded}" ToolTip="Mostrar / ocultar controles" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding GainText}" Width="40" FontWeight="Bold"
+                                   TextAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock DockPanel.Dock="Right" Text="MUTE" FontSize="9" FontWeight="Bold" Margin="6,0"
+                                   Foreground="{StaticResource MuteBrush}" VerticalAlignment="Center"
+                                   Visibility="{Binding IsMuted, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource StripTitle}" VerticalAlignment="Center"
+                                   ToolTip="{Binding Subtitle}" />
+                    </DockPanel>
+
+                    <Grid Margin="18,4,0,2" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MinWidth="80" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource HFaderBlock}" />
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Routes}" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton Style="{StaticResource RouteToggle}" Margin="2,0"
+                                                  Content="{Binding Label}" IsChecked="{Binding IsOn}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ToggleButton Grid.Column="2" Style="{StaticResource MuteToggle}" Content="Mute" Margin="2,0,0,0"
+                                      VerticalAlignment="Center" IsChecked="{Binding IsMuted}" />
+                    </Grid>
+
+                    <StackPanel Margin="18,0,0,0" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding DeviceText}" Foreground="{StaticResource DimTextBrush}" FontSize="10"
+                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding DeviceText}" />
+                        <TextBlock Text="⚠ Esta app no suena en MixSalidas: también se oye directa en su dispositivo."
+                                   Foreground="{StaticResource SoloBrush}" FontSize="10" TextWrapping="Wrap"
+                                   Visibility="{Binding ShowDirectWarning, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" Margin="18,0,0,0" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ============ Tira de procesado de una salida física (A1/A2/A3) ============ -->
+        <DataTemplate x:Key="OutputBusEqTemplate">
+            <Border Style="{StaticResource StripBorder}" Width="168">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"
+                               Foreground="{StaticResource AccentBrush}" />
+                    <TextBlock Text="{Binding DeviceLabel}" ToolTip="{Binding DeviceLabel}" HorizontalAlignment="Center"
+                               Foreground="{StaticResource DimTextBrush}" FontSize="10" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+
+                    <TextBlock Text="EQUALIZER" Style="{StaticResource SectionLabel}" />
+                    <UniformGrid Columns="3">
+                        <c:Knob Label="Bass" Minimum="-12" Maximum="12" Value="{Binding EqLow}" />
+                        <c:Knob Label="Mid" Minimum="-12" Maximum="12" Value="{Binding EqMid}" />
+                        <c:Knob Label="Treble" Minimum="-12" Maximum="12" Value="{Binding EqHigh}" />
+                    </UniformGrid>
+                    <UniformGrid Columns="2" Margin="0,2,0,0">
+                        <c:Knob Label="HPF Hz" Minimum="20" Maximum="500" DefaultValue="20" ValueFormat="0"
+                                Value="{Binding HighPass}" />
+                        <c:Knob Label="LPF kHz" Minimum="2" Maximum="20" DefaultValue="20" ValueFormat="0.#"
+                                Value="{Binding LowPass}" />
+                    </UniformGrid>
+
+                    <c:PanPad Height="80" Margin="0,6,0,0" X="{Binding PanX}" Y="{Binding PadY}"
+                              LeftLabel="L" RightLabel="R" TopLabel="brillo +" BottomLabel="brillo −" />
+
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource FaderBlock}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel Margin="6">
+        <!-- Cabecera -->
+        <DockPanel DockPanel.Dock="Top" Margin="6,2,6,4">
+            <TextBlock Text="MINI-MIXER" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+            <TextBlock Text="{Binding RunningFormat}" Foreground="{StaticResource DimTextBrush}"
+                       VerticalAlignment="Bottom" HorizontalAlignment="Right" />
+        </DockPanel>
+
+        <TabControl>
+        <TabItem Header="Mezclador">
+        <!-- La disposición de las secciones cambia según el ancho (ver MainWindow.xaml.cs) -->
+        <ScrollViewer x:Name="RootScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="RootGrid">
+
+                <!-- MICRÓFONO (referencia imagen 3) -->
+                <Border x:Name="MicSection" Style="{StaticResource SectionBorder}" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="MICRÓFONO" Style="{StaticResource SectionHeader}" />
+                        <Border Style="{StaticResource StripBorder}" Width="196" DataContext="{Binding Mic}">
+                            <StackPanel>
+                                <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" />
+                                <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+
+                                <TextBlock Text="INTELLIPAN" Style="{StaticResource SectionLabel}" />
+                                <c:PanPad Height="96" X="{Binding PanX}" Y="{Binding PadY}"
+                                          LeftLabel="L" RightLabel="R" TopLabel="brillo +" BottomLabel="voz cálida" />
+
+                                <UniformGrid Columns="3" Margin="0,6,0,0">
+                                    <c:Knob Label="Comp." Value="{Binding Comp}" />
+                                    <c:Knob Label="Gate" Value="{Binding Gate}" />
+                                    <c:Knob Label="Denoiser" Value="{Binding Denoiser}" />
+                                </UniformGrid>
+
+                                <TextBlock Text="EQUALIZER" Style="{StaticResource SectionLabel}" />
+                                <UniformGrid Columns="3">
+                                    <c:Knob Label="Bass" Minimum="-12" Maximum="12" Value="{Binding EqLow}" />
+                                    <c:Knob Label="Mid" Minimum="-12" Maximum="12" Value="{Binding EqMid}" />
+                                    <c:Knob Label="Treble" Minimum="-12" Maximum="12" Value="{Binding EqHigh}" />
+                                </UniformGrid>
+                                <UniformGrid Columns="2">
+                                    <c:Knob Label="HPF Hz" Minimum="20" Maximum="500" DefaultValue="20" ValueFormat="0"
+                                            Value="{Binding HighPass}" />
+                                    <c:Knob Label="LPF kHz" Minimum="2" Maximum="20" DefaultValue="20" ValueFormat="0.#"
+                                            Value="{Binding LowPass}" />
+                                </UniformGrid>
+
+                                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource FaderBlock}" />
+                            </StackPanel>
+                        </Border>
+                    </DockPanel>
+                </Border>
+
+                <!-- Columna central: los bloques se apilan; al ocultar uno queda sólo su título -->
+                <StackPanel x:Name="MiddleColumn" VerticalAlignment="Top">
+
+                <!-- ENTRADAS VIRTUALES (se pueden ocultar; las tiras se reacomodan si falta ancho) -->
+                <Border x:Name="VirtualSection" Style="{StaticResource SectionBorder}">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource HideToggle}"
+                                          IsChecked="{Binding VirtualInputsVisible, Converter={x:Static c:InverseBool.Instance}}" />
+                            <TextBlock Text="VIRTUAL INPUTS" Style="{StaticResource SectionHeader}" Margin="0" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding VirtualInputs}" ItemTemplate="{StaticResource VirtualInputTemplate}"
+                                      Margin="0,4,0,0" Visibility="{Binding VirtualInputsVisible, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
+                <!-- PROCESADO DE SALIDAS A1–A3 (minimizable; mismo EQ / filtros / pad que las entradas) -->
+                <Border x:Name="OutputEqSection" Style="{StaticResource SectionBorder}">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource HideToggle}"
+                                          IsChecked="{Binding OutputEqVisible, Converter={x:Static c:InverseBool.Instance}}" />
+                            <TextBlock Text="HARDWARE OUT · A1 A2 A3" Style="{StaticResource SectionHeader}" Margin="0" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding PhysicalOutputs}" ItemTemplate="{StaticResource OutputBusEqTemplate}"
+                                      Margin="0,4,0,0"
+                                      Visibility="{Binding OutputEqVisible, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+                </StackPanel>
+
+                <!-- SALIDAS + APLICACIONES -->
+                <Border x:Name="RightSection" Style="{StaticResource SectionBorder}" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="MIXSALIDAS · salida virtual de Windows" Style="{StaticResource SectionHeader}" />
+                        <ContentControl Content="{Binding MixSalidas}" ContentTemplate="{StaticResource MixSalidasRowTemplate}" />
+
+                        <DockPanel Margin="0,10,0,4">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource HeaderToggle}" Content="minimizar todas"
+                                          IsChecked="{Binding AppsCompact}" />
+                            <TextBlock Text="APLICACIONES" Style="{StaticResource SectionHeader}" Margin="0" />
+                        </DockPanel>
+                        <TextBlock Text="Ninguna aplicación tiene sesiones de audio abiertas" Margin="0,8"
+                                   Foreground="{StaticResource DimTextBrush}" HorizontalAlignment="Center"
+                                   Visibility="{Binding HasNoApps, Converter={StaticResource BoolToVis}}" />
+                        <ItemsControl ItemsSource="{Binding Apps}" ItemTemplate="{StaticResource AppRowTemplate}" />
+
+                        <TextBlock Text="SALIDAS FÍSICAS" Style="{StaticResource SectionHeader}" Margin="0,10,0,4" />
+                        <ItemsControl ItemsSource="{Binding PhysicalOutputs}" ItemTemplate="{StaticResource BusRowTemplate}" />
+
+                        <TextBlock Text="MICRÓFONO VIRTUAL" Style="{StaticResource SectionHeader}" Margin="0,10,0,4" />
+                        <ContentControl Content="{Binding VirtualMic}" ContentTemplate="{StaticResource BusRowTemplate}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+        </TabItem>
+
+        <!-- ===================== CONFIGURACIÓN ===================== -->
+        <TabItem Header="Configuración">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="4">
+
+                    <!-- Nivel máximo por salida -->
+                    <Border Style="{StaticResource SectionBorder}" Padding="14,10">
+                        <StackPanel>
+                            <TextBlock Text="NIVEL MÁXIMO DE LAS SALIDAS" Style="{StaticResource SectionHeader}" HorizontalAlignment="Left" />
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource DimTextBrush}" Margin="0,0,0,8"
+                                       Text="Es el nivel que entrega cada salida con su fader al 100 %. Funciona como un segundo control interno: aunque subas el fader al máximo, la salida nunca pasa de aquí. Rango: −40 dB a +1.5 dB." />
+                            <ItemsControl ItemsSource="{Binding AllBuses}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="110" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="76" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                                <TextBlock Text="{Binding DeviceLabel}" FontSize="10" Foreground="{StaticResource DimTextBrush}"
+                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding DeviceLabel}" />
+                                            </StackPanel>
+                                            <Slider Grid.Column="1" Style="{StaticResource HFader}" Margin="8,0"
+                                                    Minimum="-40" Maximum="1.5" SmallChange="0.5" LargeChange="3"
+                                                    Value="{Binding MaxLevelDb}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding MaxLevelText}" FontWeight="Bold"
+                                                       TextAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Frecuencia de muestreo -->
+                    <Border Style="{StaticResource SectionBorder}" Padding="14,10">
+                        <StackPanel>
+                            <TextBlock Text="CALIDAD DE AUDIO" Style="{StaticResource SectionHeader}" HorizontalAlignment="Left" />
+                            <DockPanel Margin="0,4,0,0">
+                                <TextBlock Text="Frecuencia de mezcla" VerticalAlignment="Center" Width="140" />
+                                <ComboBox Width="200" HorizontalAlignment="Left"
+                                          ItemsSource="{Binding SampleRateOptions}" SelectedItem="{Binding SelectedSampleRate}" />
+                            </DockPanel>
+                            <TextBlock Margin="0,6,0,0" Foreground="{StaticResource DimTextBrush}">
+                                <Run Text="Funcionando ahora a:" />
+                                <Run Text="{Binding RunningFormat, Mode=OneWay}" Foreground="{StaticResource TextBrush}" />
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                        Visibility="{Binding NeedsRestart, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="⚠ Reinicia Mini-Mixer para aplicar el cambio." Foreground="{StaticResource SoloBrush}"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <Button Style="{StaticResource AccentButton}" Content="Reiniciar ahora" Click="OnRestartClick" />
+                            </StackPanel>
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource DimTextBrush}" Margin="0,10,0,0" FontSize="10.5"
+                                       Text="Es la frecuencia a la que Mini-Mixer mezcla y procesa internamente. Las apps (Spotify, navegador, juegos) y Meet/Discord trabajan a 48 kHz, así que su audio se convierte a la frecuencia de mezcla y, al salir, a la de cada dispositivo. 96 o 192 kHz multiplican por 2 o por 4 el trabajo de la CPU. Para que la salida llegue de verdad a 192 kHz, configura también el dispositivo: Panel de sonido › dispositivo › Propiedades › Opciones avanzadas › Formato predeterminado." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Inicio -->
+                    <Border Style="{StaticResource SectionBorder}" Padding="14,10">
+                        <StackPanel>
+                            <TextBlock Text="INICIO" Style="{StaticResource SectionHeader}" HorizontalAlignment="Left" />
+                            <CheckBox Content="Iniciar Mini-Mixer con Windows (directo a la bandeja)" Margin="0,4,0,0"
+                                      IsChecked="{Binding StartWithWindows}" />
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource DimTextBrush}" Margin="0,6,0,0" FontSize="10.5"
+                                       Text="La configuración se guarda en %APPDATA%\MiniMixer\settings.json." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
