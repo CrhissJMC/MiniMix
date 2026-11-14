@@ -83,7 +83,7 @@ En otro PC, los dispositivos tienen otros identificadores, así que habrá que e
 | No se oye nada de las apps | MixSalidas debe ser la salida predeterminada de Windows y **A1** debe tener tus altavoces. En la fila de la app, al menos un botón A1/A2/A3 encendido. |
 | Una app se oye **doble** | Esa app está sonando directamente en tus altavoces y además por Mini-Mixer. En Windows › Sonido › Mezclador de volumen, pon su salida en "Predeterminado" o MixSalidas. |
 | En Discord no me oyen | Micrófono de Discord = **MinMix-B1**; en Mini-Mixer, tira del micrófono con **B1** encendido y fila B1 con **CABLE Input**. |
-| No arranca con Windows | Administrador de tareas › Aplicaciones de arranque › **Mini-Mixer** › Habilitar. O en Mini-Mixer › Configuración › "Iniciar Mini-Mixer al encender el PC". Qué pasó en cada arranque: `%APPDATA%MiniMixermini-mixer.log`. |
+| No arranca con Windows | Administrador de tareas › Aplicaciones de arranque › **Mini-Mixer** › Habilitar. O en Mini-Mixer › Configuración › "Iniciar Mini-Mixer al encender el PC". Qué pasó en cada arranque: `%APPDATA%\MiniMixer\mini-mixer.log`. |
 | La app consume mucha CPU | Configuración › Frecuencia de mezcla › **48 kHz**. |
 
 ## 9. Desinstalar
