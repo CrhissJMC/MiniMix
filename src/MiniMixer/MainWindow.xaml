@@ -380,7 +380,7 @@
                         <StackPanel>
                             <TextBlock Text="NIVEL MÁXIMO DE LAS SALIDAS" Style="{StaticResource SectionHeader}" HorizontalAlignment="Left" />
                             <TextBlock TextWrapping="Wrap" Foreground="{StaticResource DimTextBrush}" Margin="0,0,0,8"
-                                       Text="Es el nivel que entrega cada salida con su fader al 100 %. Funciona como un segundo control interno: aunque subas el fader al máximo, la salida nunca pasa de aquí. 0 dB (centro) es el estándar: el audio sale tal cual. Hacia la izquierda se limita hasta −40 dB; hacia la derecha se puede subir hasta +1.5 dB. Doble clic en la barra: vuelve a 0 dB." />
+                                       Text="Es el nivel que entrega cada salida con su fader al 100 %. Funciona como un segundo control interno: aunque subas el fader al máximo, la salida nunca pasa de aquí. 0 dB (centro) es el estándar: el audio sale tal cual. Hacia la izquierda se limita hasta −40 dB; hacia la derecha se puede subir hasta +6 dB (si el audio ya viene a tope, el limitador contiene los picos). Doble clic en la barra: vuelve a 0 dB." />
                             <ItemsControl ItemsSource="{Binding AllBuses}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -403,7 +403,7 @@
                                                 <Grid Margin="0,1,0,0">
                                                     <TextBlock Text="−40 dB" FontSize="9" Foreground="{StaticResource DimTextBrush}" HorizontalAlignment="Left" />
                                                     <TextBlock Text="0 dB" FontSize="9" Foreground="{StaticResource DimTextBrush}" HorizontalAlignment="Center" />
-                                                    <TextBlock Text="+1.5" FontSize="9" Foreground="{StaticResource DimTextBrush}" HorizontalAlignment="Right" />
+                                                    <TextBlock Text="+6 dB" FontSize="9" Foreground="{StaticResource DimTextBrush}" HorizontalAlignment="Right" />
                                                 </Grid>
                                             </StackPanel>
                                             <TextBlock Grid.Column="2" Text="{Binding MaxLevelText}" FontWeight="Bold"
@@ -443,10 +443,13 @@
                     <Border Style="{StaticResource SectionBorder}" Padding="14,10">
                         <StackPanel>
                             <TextBlock Text="INICIO" Style="{StaticResource SectionHeader}" HorizontalAlignment="Left" />
-                            <CheckBox Content="Iniciar Mini-Mixer con Windows (directo a la bandeja)" Margin="0,4,0,0"
+                            <CheckBox Content="Iniciar Mini-Mixer al encender el PC" Margin="0,4,0,0"
                                       IsChecked="{Binding StartWithWindows}" />
+                            <CheckBox Content="Al encender, abrir la ventana (si no, se queda en la bandeja y avisa con una notificación)"
+                                      Margin="24,8,0,0" IsChecked="{Binding StartupShowWindow}"
+                                      IsEnabled="{Binding StartWithWindows}" />
                             <TextBlock TextWrapping="Wrap" Foreground="{StaticResource DimTextBrush}" Margin="0,6,0,0" FontSize="10.5"
-                                       Text="La configuración se guarda en %APPDATA%\MiniMixer\settings.json." />
+                                       Text="Al encender el PC, Mini-Mixer espera a que el audio de Windows esté listo antes de arrancar. La configuración se guarda en %APPDATA%\MiniMixer\settings.json y el registro de arranques en %APPDATA%\MiniMixer\mini-mixer.log." />
                         </StackPanel>
                     </Border>
                 </StackPanel>

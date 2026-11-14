@@ -155,6 +155,18 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public bool NeedsRestart => AppSettings.Current.SampleRate != AudioEngine.SampleRate;
 
+    /// <summary>Al encender el PC: abrir la ventana (true) o quedarse sólo en la bandeja con un aviso.</summary>
+    public bool StartupShowWindow
+    {
+        get => AppSettings.Current.StartupShowWindow;
+        set
+        {
+            AppSettings.Current.StartupShowWindow = value;
+            AppSettings.Current.Save();
+            OnPropertyChanged();
+        }
+    }
+
     public bool StartWithWindows
     {
         get => AppSettings.Current.StartWithWindows;

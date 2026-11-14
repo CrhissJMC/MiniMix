@@ -46,7 +46,7 @@ public sealed class BusViewModel : StripViewModelBase
     // ---- Nivel máximo (Configuración) ----
     protected override double MaxDb => _maxDb;
 
-    /// <summary>dB que entrega el fader al 100 %. Rango permitido: -40 … +1.5 dB.</summary>
+    /// <summary>dB que entrega el fader al 100 %. Rango permitido: -40 … +6 dB.</summary>
     public double MaxLevelDb
     {
         get => _maxDb;
@@ -65,7 +65,7 @@ public sealed class BusViewModel : StripViewModelBase
 
     /// <summary>
     /// Posición del deslizador de Configuración (0..100) con 0 dB en el centro:
-    /// mitad izquierda = -40 … 0 dB, mitad derecha = 0 … +1.5 dB.
+    /// mitad izquierda = -40 … 0 dB, mitad derecha = 0 … +6 dB.
     /// </summary>
     public double MaxLevelPosition
     {

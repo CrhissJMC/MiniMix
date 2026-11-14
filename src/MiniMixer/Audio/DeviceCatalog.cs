@@ -85,6 +85,13 @@ public static class DeviceCatalog
         return (physical.FirstOrDefault(o => !IsMonitor(o.Label)) ?? physical.FirstOrDefault())?.DeviceId;
     }
 
+    /// <summary>true si el dispositivo existe y está activo.</summary>
+    public static bool IsActive(string id)
+    {
+        try { return new MMDeviceEnumerator().GetDevice(id).State == DeviceState.Active; }
+        catch { return false; }
+    }
+
     public static MMDevice? Get(string id)
     {
         try { return Enumerator.GetDevice(id); }

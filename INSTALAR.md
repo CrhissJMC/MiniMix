@@ -59,6 +59,7 @@ Todo esto se guarda solo: no hay que volver a hacerlo.
 
 ## 6. Uso diario
 
+- Al encender el PC, Mini-Mixer arranca solo y **abre su ventana** (espera a que el audio de Windows esté listo). Si prefieres que se quede solo en la bandeja con un aviso: Configuración › Inicio.
 - La **X** solo oculta la ventana: Mini-Mixer sigue funcionando en la **bandeja del sistema** (icono de tres faders verdes, junto al reloj; si no lo ves, está dentro de la flecha **^**).
 - **Clic** en el icono: abre la ventana. **Clic derecho**: Iniciar con Windows / **Salir**.
 - Cada aplicación recuerda su **volumen, mute y salidas (A1/A2/A3/B1)** de la última vez.
@@ -82,7 +83,7 @@ En otro PC, los dispositivos tienen otros identificadores, así que habrá que e
 | No se oye nada de las apps | MixSalidas debe ser la salida predeterminada de Windows y **A1** debe tener tus altavoces. En la fila de la app, al menos un botón A1/A2/A3 encendido. |
 | Una app se oye **doble** | Esa app está sonando directamente en tus altavoces y además por Mini-Mixer. En Windows › Sonido › Mezclador de volumen, pon su salida en "Predeterminado" o MixSalidas. |
 | En Discord no me oyen | Micrófono de Discord = **MinMix-B1**; en Mini-Mixer, tira del micrófono con **B1** encendido y fila B1 con **CABLE Input**. |
-| No arranca con Windows | Administrador de tareas › Aplicaciones de arranque › **Mini-Mixer** › Habilitar. O en Mini-Mixer › Configuración › "Iniciar con Windows". |
+| No arranca con Windows | Administrador de tareas › Aplicaciones de arranque › **Mini-Mixer** › Habilitar. O en Mini-Mixer › Configuración › "Iniciar Mini-Mixer al encender el PC". Qué pasó en cada arranque: `%APPDATA%MiniMixermini-mixer.log`. |
 | La app consume mucha CPU | Configuración › Frecuencia de mezcla › **48 kHz**. |
 
 ## 9. Desinstalar

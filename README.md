@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File tools\install.ps1
 El script compila en Release, instala en `%LOCALAPPDATA%\Programs\MiniMixer` (sin administrador) y crea el acceso directo "Mini-Mixer" en el menú Inicio. Si la app está abierta, la cierra antes y la vuelve a abrir. Hay que volver a ejecutarlo después de cada cambio en el código.
 
 Pestaña **Configuración** (se guarda en `%APPDATA%\MiniMixer\settings.json`, junto con los dispositivos elegidos en cada fila y las secciones ocultas):
-- **Nivel máximo de las salidas**: el nivel que entrega A1/A2/A3/B1 con el fader al 100 %, de −40 a +1.5 dB, con 0 dB (estándar) en el centro de la barra. Es un segundo control interno: el fader nunca lo supera.
+- **Nivel máximo de las salidas**: el nivel que entrega A1/A2/A3/B1 con el fader al 100 %, de −40 a +6 dB, con 0 dB (estándar) en el centro de la barra. Es un segundo control interno: el fader nunca lo supera.
 - **Frecuencia de mezcla**: 44.1 / 48 / 96 / 192 kHz; se aplica al reiniciar. Medido con apps sonando: a 48 kHz ≈ 0.6 % de un núcleo en la bandeja y a 192 kHz ≈ 9 %. Las fuentes (apps, Discord) trabajan a 48 kHz, así que 192 kHz no añade calidad audible.
 - **Iniciar con Windows**.
 

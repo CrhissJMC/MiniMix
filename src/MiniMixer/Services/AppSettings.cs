@@ -9,7 +9,7 @@ namespace MiniMixer.Services;
 public sealed class AppSettings
 {
     /// <summary>Tope superior permitido para el nivel máximo de una salida.</summary>
-    public const double MaxAllowedDb = 1.5;
+    public const double MaxAllowedDb = 6;
     public const double MinAllowedDb = -40;
 
     /// <summary>Arrancar con Windows (directo a la bandeja). Se sincroniza con el registro en cada arranque.</summary>
@@ -19,6 +19,12 @@ public sealed class AppSettings
     public bool VirtualInputsVisible { get; set; } = true;
     public bool OutputEqVisible { get; set; } = true;
     public bool AppsCompact { get; set; }
+
+    /// <summary>
+    /// Al encender el PC (arranque automático): true = se abre la ventana; false = se queda en la bandeja
+    /// y muestra un aviso de que está funcionando.
+    /// </summary>
+    public bool StartupShowWindow { get; set; } = true;
 
     /// <summary>Frecuencia interna de mezcla (Hz). Requiere reiniciar Mini-Mixer.</summary>
     public int SampleRate { get; set; } = 48000;
