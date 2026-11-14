@@ -7,6 +7,11 @@
     <!-- Sólo para NotifyIcon (icono de la bandeja). Se quitan sus usings globales para no chocar con WPF. -->
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>Mini-Mixer</Product>
+    <AssemblyTitle>Mini-Mixer</AssemblyTitle>
+    <Company>CrhissJMC</Company>
+    <Copyright>CrhissJMC</Copyright>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MiniMixer</RootNamespace>

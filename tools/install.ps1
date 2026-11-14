@@ -1,4 +1,4 @@
-# Compila Mini-Mixer en Release y lo instala en %LOCALAPPDATA%\Programs\MiniMixer
+﻿# Compila Mini-Mixer en Release y lo instala en %LOCALAPPDATA%\Programs\MiniMixer
 # (carpeta del usuario, sin administrador). Crea el acceso directo del menú Inicio.
 # Si Mini-Mixer está abierto, lo cierra antes de copiar y lo vuelve a abrir al final.
 #

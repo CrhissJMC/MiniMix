@@ -1,4 +1,4 @@
-# Genera src/MiniMixer/app.ico (16, 24, 32, 48, 64, 256 px; entradas PNG dentro del ICO).
+﻿# Genera src/MiniMixer/app.ico (16, 24, 32, 48, 64, 256 px; entradas PNG dentro del ICO).
 # Uso: powershell -ExecutionPolicy Bypass -File tools\make-icon.ps1
 Add-Type -AssemblyName System.Drawing
 

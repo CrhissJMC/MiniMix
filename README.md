@@ -1,12 +1,15 @@
 # Mini-Mixer
 
+> **Descargar:** [Releases](https://github.com/CrhissJMC/MiniMix/releases): instalador `MiniMixer-Setup-x.y.z.exe` o portable `MiniMixer.exe`.
+> **Instalar desde cero (paso a paso):** [INSTALAR.md](INSTALAR.md)
+
 Mezclador de audio ligero para Windows (WPF + NAudio), inspirado en Voicemeeter Potato pero reducido a lo que hace falta en el día a día:
 micrófono con dinámica y EQ, 3 entradas virtuales, **mezclador por aplicación**, 3 salidas físicas (A1–A3) y un micrófono virtual (B1):
 
 - **MixSalidas**: un dispositivo de reproducción virtual que se pone como salida predeterminada de Windows. Cada app que suena en él se captura por separado y va a A1/A2/A3/B1 según sus botones, así puede sonar en varios dispositivos a la vez. Se usa uno de los VAIO de Voicemeeter ya instalados, renombrado a "MixSalidas" (Panel de sonido › dispositivo › Propiedades › nombre). Se ha medido que su captura funciona sin Voicemeeter abierto.
 - **Volumen de Windows ↔ fader de MixSalidas**: enlazados en ambos sentidos. Ese volumen no se aplica a lo capturado (medido: igual al 100 % que al 25 %), así que el mixer lo aplica a las apps capturadas. El volumen y el mute por app de Windows sí afectan a la captura (medido), por eso los faders de las apps funcionan también para lo ruteado.
 - **A1–A3**: salidas físicas, cada una en su dispositivo. Su 100 % equivale a −20 dB.
-- **B1 · MixMic**: se envía a un cable virtual (VB-Cable, "CABLE Input"). En Meet/Discord se elige "CABLE Output" (renombrable a "MixMic"). Los VAIO de Voicemeeter no sirven aquí: su lado de grabación solo recibe audio con Voicemeeter abierto.
+- **B1 · MinMix-B1**: se envía a un cable virtual (VB-Cable, "CABLE Input"). En Meet/Discord se elige "CABLE Output", renombrado en Windows a "MinMix-B1". Los VAIO de Voicemeeter no sirven aquí: su lado de grabación solo recibe audio con Voicemeeter abierto.
 
 Todos los faders van en % con curva de audio (50 % ≈ −12 dB respecto al 100 %). La salida lleva un limitador suave en lugar de recorte duro. La interfaz se adapta al ancho de la ventana (3 disposiciones), y las apps se muestran en filas que se pueden minimizar a "nombre + %".
 
